@@ -19,7 +19,7 @@ def groq_hello_world() -> dict[str, str]:
 
     try:
         chat_completion = client.chat.completions.create(
-            model="llama3-8b-8192",
+            model=settings.groq_model,
             messages=[
                 {"role": "system", "content": "Eres un asistente util y conciso."},
                 {"role": "user", "content": "Dime hola mundo."},
