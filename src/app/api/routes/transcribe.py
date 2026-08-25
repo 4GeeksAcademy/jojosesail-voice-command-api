@@ -82,12 +82,18 @@ async def _transcribe_audio(upload: UploadFile, language: str | None) -> str:
     settings = get_settings()
     client = Groq(api_key=settings.groq_api_key, timeout=settings.request_timeout_seconds)
 
-    transcription = client.audio.transcriptions.create(
-        file=(upload.filename or "command.webm", audio_bytes),
-        model=settings.groq_transcription_model,
-        language=language,
-        response_format="verbose_json",
-    )
+    try:
+        transcription = client.audio.transcriptions.create(
+            file=(upload.filename or "command.webm", audio_bytes),
+            model=settings.groq_transcription_model,
+            language=language,
+            response_format="verbose_json",
+        )
+    except Exception as exc:  # pragma: no cover - depende de red/servicio externo
+        raise HTTPException(
+            status_code=status.HTTP_502_BAD_GATEWAY,
+            detail=f"Groq transcription failed: {exc}",
+        ) from exc
 
     text = (getattr(transcription, "text", None) or "").strip()
     if not text:
