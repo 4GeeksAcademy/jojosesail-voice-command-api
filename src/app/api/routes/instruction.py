@@ -11,6 +11,34 @@ from src.app.schemas.voice import InstructionPayload, InstructionRequest
 router = APIRouter(tags=["instruction"])
 
 
+@router.get("/groq-hello")
+def groq_hello_world() -> dict[str, str]:
+    """Endpoint de prueba equivalente al ejemplo de SDK: retorna la respuesta del modelo."""
+    settings = get_settings()
+    client = Groq(api_key=settings.groq_api_key, timeout=settings.request_timeout_seconds)
+
+    try:
+        chat_completion = client.chat.completions.create(
+            model="llama3-8b-8192",
+            messages=[
+                {"role": "system", "content": "Eres un asistente util y conciso."},
+                {"role": "user", "content": "Dime hola mundo."},
+            ],
+        )
+    except Exception as exc:  # pragma: no cover - depende de red/servicio externo
+        raise HTTPException(
+            status_code=status.HTTP_502_BAD_GATEWAY,
+            detail=f"Groq request failed: {exc}",
+        ) from exc
+
+    message = (
+        chat_completion.choices[0].message.content
+        if chat_completion.choices and chat_completion.choices[0].message
+        else ""
+    )
+    return {"message": message or ""}
+
+
 @router.post("/instruction", response_model=InstructionPayload)
 def route_instruction(
     payload: InstructionRequest,
